@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-upstream
+  namespace: chainguard-demo
+  labels: { app: demo, flavor: upstream }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: demo, flavor: upstream } }
+  template:
+    metadata:
+      labels: { app: demo, flavor: upstream }
+    spec:
+      containers:
+        - name: app
+          image: IMAGE_REF
+          ports: [{ containerPort: 8080 }]
+          readinessProbe: { httpGet: { path: /healthz, port: 8080 } }
+          resources: { requests: { cpu: 50m, memory: 64Mi }, limits: { memory: 256Mi } }
+          # NOTE: cannot enable runAsNonRoot / readOnlyRootFilesystem here without
+          # rewriting the Dockerfile: the upstream image runs as root by default.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-upstream
+  namespace: chainguard-demo
+spec:
+  type: LoadBalancer
+  selector: { app: demo, flavor: upstream }
+  ports: [{ port: 80, targetPort: 8080 }]

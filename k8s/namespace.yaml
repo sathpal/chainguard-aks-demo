@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chainguard-demo
+  labels:
+    pod-security.kubernetes.io/enforce: baseline   # upstream image passes baseline only
+    pod-security.kubernetes.io/warn: restricted    # chainguard image passes restricted

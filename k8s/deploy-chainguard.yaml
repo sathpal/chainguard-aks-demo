@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-chainguard
+  namespace: chainguard-demo
+  labels: { app: demo, flavor: chainguard }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: demo, flavor: chainguard } }
+  template:
+    metadata:
+      labels: { app: demo, flavor: chainguard }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: app
+          image: IMAGE_REF
+          ports: [{ containerPort: 8080 }]
+          readinessProbe: { httpGet: { path: /healthz, port: 8080 } }
+          resources: { requests: { cpu: 50m, memory: 64Mi }, limits: { memory: 256Mi } }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-chainguard
+  namespace: chainguard-demo
+spec:
+  type: LoadBalancer
+  selector: { app: demo, flavor: chainguard }
+  ports: [{ port: 80, targetPort: 8080 }]

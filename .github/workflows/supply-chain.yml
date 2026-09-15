@@ -1,0 +1,42 @@
+# Reference pipeline: build on Chainguard base -> SBOM -> scan gate -> keyless sign -> push to ACR.
+name: supply-chain
+# Manual trigger: needs ACR_NAME, AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
+# secrets (OIDC federated credential with AcrPush on the registry) before it can run.
+on:
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  id-token: write
+env:
+  IMAGE: ${{ secrets.ACR_NAME }}.azurecr.io/demo-app
+jobs:
+  build-sign-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - run: az acr login -n ${{ secrets.ACR_NAME }}
+      - uses: docker/setup-buildx-action@v3
+      - name: Build (Chainguard base)
+        run: docker buildx build -f docker/Dockerfile.chainguard -t $IMAGE:${{ github.sha }} --load .
+      - uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+      - name: Vulnerability gate (fail on High+)
+        uses: anchore/scan-action@v6
+        with:
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+          fail-build: true
+          severity-cutoff: high
+      - run: docker push $IMAGE:${{ github.sha }}
+      - uses: sigstore/cosign-installer@v3
+      - name: Keyless sign + attach SBOM attestation
+        run: |
+          cosign sign --yes $IMAGE:${{ github.sha }}
+          cosign attest --yes --predicate sbom.spdx.json --type spdxjson $IMAGE:${{ github.sha }}

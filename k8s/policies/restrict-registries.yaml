@@ -1,0 +1,21 @@
+# Only images from Chainguard or our own ACR may run in the demo namespace.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-image-registries
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: allowed-registries
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [chainguard-demo]
+      validate:
+        message: "Images must come from cgr.dev or *.azurecr.io (trusted, signed sources)."
+        pattern:
+          spec:
+            containers:
+              - image: "cgr.dev/* | *.azurecr.io/*"

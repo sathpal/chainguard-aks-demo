@@ -1,0 +1,12 @@
+# Positive test for the signature policy: a signed Chainguard image straight from cgr.dev.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-signed
+  namespace: chainguard-demo
+spec:
+  securityContext: { runAsNonRoot: true }
+  containers:
+    - name: nginx
+      image: cgr.dev/chainguard/nginx:latest
+      ports: [{ containerPort: 8080 }]

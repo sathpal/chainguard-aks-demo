@@ -1,0 +1,3 @@
+# Keep these current: app-level CVEs are yours, not the base image's.
+fastapi>=0.121
+uvicorn>=0.38

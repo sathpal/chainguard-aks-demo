@@ -312,7 +312,8 @@ do the same.
 **Pod stuck in `CreateContainerConfigError` with "image has non-numeric user".**
 Kubernetes cannot verify `runAsNonRoot` when the image sets its user by name.
 Either write `USER 65532` in the Dockerfile or set `runAsUser: 65532` in the
-pod spec. The manifest here does the latter.
+pod spec. This repo does both, so the image is correct on its own and the
+manifest still guards against a future image that is not.
 
 **Docker fails with "input/output error" or "no space left".** Your disk is
 full. Free space, restart Docker Desktop, then `docker builder prune -af`.

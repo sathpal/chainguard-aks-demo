@@ -13,7 +13,7 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 65532     # Dockerfile sets USER nonroot by name; kubelet needs a numeric uid to enforce runAsNonRoot
+        runAsUser: 65532     # image already runs as 65532; pinning it here keeps runAsNonRoot verifiable even if the image changes
         runAsGroup: 65532
         seccompProfile: { type: RuntimeDefault }
       containers:

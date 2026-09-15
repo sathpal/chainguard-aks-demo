@@ -218,6 +218,16 @@ curl http://<chainguard-ip>/api
 
 Compare the two JSON answers: `uid`, `shell_present`, `os_packages`.
 
+![az aks list, kubectl get nodes, pods and services with public IPs](docs/img/12-aks-cluster.png)
+
+![curl /api on both public IPs: root and Debian vs nonroot and Wolfi](docs/img/14-aks-api.png)
+
+The same page you saw on localhost, now served from the cluster:
+
+![upstream app page served from AKS](docs/img/10-aks-app-upstream.png)
+
+![chainguard app page served from AKS](docs/img/11-aks-app-chainguard.png)
+
 Look at [k8s/deploy-chainguard.yaml](k8s/deploy-chainguard.yaml). It turns on
 every hardening option Kubernetes offers, including a read-only root
 filesystem and dropping all capabilities. Try the same block on the upstream
@@ -242,10 +252,14 @@ kubectl apply -f k8s/pod-chainguard-nginx.yaml
 kubectl -n chainguard-demo get pod nginx-signed      # Running
 ```
 
+![Kyverno rejects Docker Hub nginx, admits signed cgr.dev nginx, both policies Ready](docs/img/13-aks-kyverno.png)
+
 ### Step 7. Debugging without a shell
 
 `kubectl exec ... sh` does not work on the Chainguard pod. Use an ephemeral
 debug container instead:
+
+![kubectl exec: no sh in the Chainguard pod, root shell with apt-get in the upstream pod](docs/img/15-aks-exec.png)
 
 ```bash
 kubectl -n chainguard-demo debug -it deploy/app-chainguard --image=cgr.dev/chainguard/wolfi-base --target=app

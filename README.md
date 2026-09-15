@@ -1,9 +1,10 @@
 # Chainguard on AKS: a hands-on comparison you can run yourself
 
 One small web app, built twice: once on the usual `python:3.13-slim` base image,
-once on a Chainguard image. You build both, scan both, look inside both, and
-optionally run both side by side on Azure Kubernetes Service with an admission
-policy that only lets trusted, signed images in.
+once on a Chainguard image. You build both, scan both, look inside both, then
+run both side by side on Azure Kubernetes Service behind an admission policy
+that only lets trusted, signed images in. AKS is the destination; the local
+steps exist so you can see the difference before it reaches a cluster.
 
 No prior experience with container security is needed. Every step prints
 something you can read, and this guide tells you what to look for.
@@ -29,8 +30,8 @@ You need a Mac or Linux machine with:
 
 - **Docker Desktop** running, with at least 5 GB of free disk. Check with `docker info`.
 - **Homebrew** (`brew --version`). The tool installer uses it.
-- **About 15 minutes** for the local part. The Azure part adds 20 minutes and a small bill.
-- **For the Azure part only:** an Azure subscription where you can create resource groups, and the Azure CLI logged in (`az login`).
+- **An Azure subscription** where you can create resource groups, and the Azure CLI logged in (`az login`).
+- **About 35 minutes** end to end: 15 for the local checks, 20 for the AKS part, teardown included. The cluster costs around one US dollar per hour while it runs.
 
 Clone the repo and install the scanners:
 
@@ -40,10 +41,13 @@ cd chainguard-aks-demo
 make tools        # installs trivy, grype, syft, cosign, crane; kubectl, helm, azure-cli if missing
 ```
 
-## Part 1: on your laptop, no Azure needed
+## Part 1: build the evidence locally
 
-You can run all of Part 1 in one go with `make demo`. The steps below do the
-same thing one at a time so you can see what each one shows.
+Everything here runs against your local Docker and takes about 15 minutes.
+It is the warm-up for Part 2: by the end you will know exactly what the two
+images look like before you put them on a cluster. You can run all of it in
+one go with `make demo`; the steps below do the same thing one at a time so
+you can see what each one shows.
 
 ### Step 1. Build both images
 
@@ -151,10 +155,12 @@ inside the Chainguard container has no shell, no package manager and no root.
 make stop
 ```
 
-## Part 2: on Azure Kubernetes Service (optional)
+## Part 2: on Azure Kubernetes Service
 
-This creates real resources that cost money: a container registry and a
-two-node cluster. Expect around one US dollar per hour. Part 2 ends with the
+This is the main part. You push both images to your own registry, deploy them
+side by side on a two-node AKS cluster, call them through public IPs, and put
+Kyverno in front so only trusted, signed images are admitted. It creates real
+resources that cost money, around one US dollar per hour, and ends with the
 command that deletes everything.
 
 ### Step 1. Configure names

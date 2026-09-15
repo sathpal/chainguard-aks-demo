@@ -19,5 +19,6 @@ COPY --chown=nonroot:nonroot app/main.py .
 
 ENV PATH="/app/venv/bin:$PATH" IMAGE_FLAVOR=chainguard PORT=8080
 EXPOSE 8080
-USER 65532   # numeric, so Kubernetes runAsNonRoot can verify it (a name cannot be checked)
+# Numeric uid, not the name: Kubernetes runAsNonRoot can verify a number but not a name.
+USER 65532
 ENTRYPOINT ["python", "main.py"]

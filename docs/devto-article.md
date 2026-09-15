@@ -230,7 +230,6 @@ $ kubectl -n chainguard-demo get pods,svc
 NAME                              READY   STATUS    RESTARTS   AGE
 app-chainguard-6f776d7959-nprs9   1/1     Running   0          89s
 app-upstream-574978df4f-4pf9g     1/1     Running   0          5m6s
-nginx-signed                      1/1     Running   0          49s
 NAME             TYPE           CLUSTER-IP     EXTERNAL-IP      PORT(S)        AGE
 app-chainguard   LoadBalancer   10.0.67.88     98.70.244.97     80:30308/TCP   5m5s
 app-upstream     LoadBalancer   10.0.126.245   20.204.187.119   80:30890/TCP   5m6s
@@ -321,7 +320,17 @@ nginx-signed   1/1     Running   0          8s
 
 One more real-world note: the namespace also carries the Pod Security Standards labels (`enforce: baseline`, `warn: restricted`). Every `kubectl apply` for the upstream deployment prints a warning that it would violate `restricted`. The Chainguard deployment is silent. That warning line is the cheapest security audit you will ever run.
 
-## Step 11: the "agent skill" part
+## Step 11: clean up
+
+Everything above lives in one resource group, including the node resource group AKS creates for itself. One command stops the meter:
+
+```bash
+az group delete -n rg-chainguard-demo --yes --no-wait     # or: make aks-down
+```
+
+The public IPs in this post are gone by the time you read it. The repo is not.
+
+## Step 12: the "agent skill" part
 
 The episode ends on AI-assisted workflows. I turned the migration steps above into a Claude Code skill (`.claude/skills/chainguard-migrate/SKILL.md`) plus a base-image mapping table. In the repo you say:
 

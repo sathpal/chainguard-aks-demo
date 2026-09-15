@@ -23,8 +23,9 @@ Use `base-image-map.md` in this skill folder. Rules:
 ## 3. Rewrite the Dockerfile
 - Multi-stage. `COPY --from=builder --chown=nonroot:nonroot`.
 - Exec-form `ENTRYPOINT` (no shell to interpret a string form).
-- `USER nonroot`, listen on a port > 1024.
+- `USER 65532` (numeric), listen on a port > 1024. A named `USER nonroot` breaks Kubernetes `runAsNonRoot`, which cannot verify a name.
 - Remove `apt-get`, `curl | sh`, and any `RUN` that assumes a shell in the runtime stage.
+- In the build stage, work inside `/home/nonroot` (it exists and is owned by nonroot). Do not rely on `WORKDIR` creating a writable directory: BuildKit creates it as the current user, but the legacy builder used by ACR Tasks and older CI creates it as root, and the `-dev` image runs as nonroot, so `python -m venv /app/venv` fails with permission denied there.
 
 ## 4. Prove it
 - Build as `<name>:after`; rescan with grype; re-inspect.
@@ -35,5 +36,7 @@ Use `base-image-map.md` in this skill folder. Rules:
 ## 5. Report
 Print one table: image | size | total | critical | high | user | shell | pkg manager, before vs after.
 Then list anything that still needs a human decision (remaining app-level CVEs in pip/npm packages, features that needed a shell, Kubernetes securityContext now possible: `runAsNonRoot`, `readOnlyRootFilesystem`, `drop: [ALL]`).
+Include a ready-to-paste pod `securityContext` and always set `runAsUser: 65532` alongside `runAsNonRoot: true`; without the numeric uid the pod sits in `CreateContainerConfigError` ("image has non-numeric user").
+If the image will be built in the cloud (ACR Tasks, older CI runners), say whether the Dockerfile follows the `/home/nonroot` build-stage rule from step 3, and if not, fix it before reporting.
 
 Never claim zero CVEs without a fresh scan output in the transcript.

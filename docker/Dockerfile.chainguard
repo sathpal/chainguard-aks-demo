@@ -2,17 +2,19 @@
 # minimal runtime image (no shell, no package manager, nonroot, Wolfi base,
 # rebuilt continuously so CVEs are patched at the source).
 FROM cgr.dev/chainguard/python:latest-dev AS builder
+# Builder stays in nonroot's existing home dir: BuildKit creates a new WORKDIR as the current user,
+# but the legacy builder (ACR Tasks) creates it as root, and the -dev image runs as nonroot.
 
-WORKDIR /app
-RUN python -m venv /app/venv
-ENV PATH="/app/venv/bin:$PATH"
+WORKDIR /home/nonroot
+RUN python -m venv venv
+ENV PATH="/home/nonroot/venv/bin:$PATH"
 COPY app/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 FROM cgr.dev/chainguard/python:latest
 
 WORKDIR /app
-COPY --from=builder --chown=nonroot:nonroot /app/venv /app/venv
+COPY --from=builder --chown=nonroot:nonroot /home/nonroot/venv /app/venv
 COPY --chown=nonroot:nonroot app/main.py .
 
 ENV PATH="/app/venv/bin:$PATH" IMAGE_FLAVOR=chainguard PORT=8080

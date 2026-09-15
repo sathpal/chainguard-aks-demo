@@ -13,6 +13,6 @@ RG="${RG:-rg-chainguard-demo}"
 LOCATION="${LOCATION:-centralindia}"
 ACR="${ACR:-}"            # e.g. cgdemoacr (must be globally unique, lowercase)
 AKS="${AKS:-aks-chainguard-demo}"
-NODE_SIZE="${NODE_SIZE:-Standard_B2s}"   # pick a family with vCPU quota: az vm list-usage -l $LOCATION -o table
+NODE_SIZE="${NODE_SIZE:-Standard_D2s_v4}"   # pick a family with vCPU quota: az vm list-usage -l $LOCATION -o table
 bold() { printf '\033[1m%s\033[0m\n' "$*"; }
 need() { command -v "$1" >/dev/null 2>&1 || { echo "missing tool: $1 (run: make tools)" >&2; exit 1; }; }

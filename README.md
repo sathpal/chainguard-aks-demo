@@ -28,6 +28,23 @@ that migrates Dockerfiles for you.
 The 5 left on Chainguard are Wolfi packages with fixes already queued (zlib) or
 no upstream fix (python). Rebuild tomorrow and the number moves; that is the point.
 
+## Results on AKS (2026-09-15, piquantbs subscription, Central India)
+
+Two `Standard_D2s_v4` nodes, both flavours behind LoadBalancer services, Kyverno enforcing
+a registry allow-list and keyless signature verification for `cgr.dev/chainguard/*`.
+
+| endpoint | os | uid | shell | pkg mgr | os packages |
+|---|---|---|---|---|---|
+| `/api` on upstream   | Debian GNU/Linux 13 (trixie) | 0     | yes | yes | 87 |
+| `/api` on chainguard | Wolfi                        | 65532 | no  | no  | 26 |
+
+`docker.io/library/nginx:latest` is rejected by the `restrict-image-registries` policy;
+`cgr.dev/chainguard/nginx:latest` is admitted after Kyverno verifies its Sigstore signature.
+
+Two gotchas found on the way, both fixed in this repo:
+- ACR Tasks uses the legacy builder, which creates `WORKDIR` as root; the builder stage now works in `/home/nonroot`.
+- `USER nonroot` (a name) plus `runAsNonRoot: true` gives `CreateContainerConfigError`; the deployment pins `runAsUser: 65532`.
+
 ## Quick start (local, no Azure)
 
 ```bash
@@ -43,7 +60,8 @@ make stop
 cp .env.example .env    # set ACR (globally unique), region, names
 az login --tenant <tenant-id>; az account set -s <subscription>
 make aks-up             # RG + ACR + 2-node AKS, ACR attached          (~6 min)
-make acr-push           # buildx linux/amd64 both flavours -> ACR
+                        # NODE_SIZE defaults to Standard_D2s_v4; pick one your subscription has quota for
+make acr-push           # buildx linux/amd64 both flavours -> ACR (or: az acr build, no local Docker needed)
 make deploy             # both deployments + LoadBalancer services
 make policy             # Kyverno + policies, then tries an unsigned Docker Hub image (rejected)
 kubectl apply -f k8s/pod-chainguard-nginx.yaml   # signed cgr.dev image (admitted)

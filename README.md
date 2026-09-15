@@ -55,6 +55,8 @@ Two images appear, `demo-app:upstream` and `demo-app:chainguard`. The build
 prints their sizes at the end. The Chainguard one is smaller because the base
 image contains only what Python needs to run.
 
+![docker images output: upstream 248MB, chainguard 140MB](docs/img/02-images.png)
+
 The two Dockerfiles are in [docker/](docker/). The Chainguard one is
 multi-stage: dependencies are installed in a `-dev` image that has `pip` and a
 shell, then copied into the minimal runtime image that has neither.
@@ -78,6 +80,10 @@ What to look for: the `TOTAL` and `CRIT` columns. None of those CVEs are in the
 app code, which is identical in both images. They all come from the operating
 system layer underneath.
 
+![grype scan output for both images](docs/img/04-grype.png)
+
+![comparison table: 178 CVEs vs 5](docs/img/01-compare.png)
+
 Full scan output is saved under `out/` as JSON and text.
 
 ### Step 3. Prove the base image is really from Chainguard
@@ -90,6 +96,8 @@ Chainguard signs every image with Sigstore. This checks the signature against
 Chainguard's public release identity and prints the issuer, the identity and
 the image digest. No keys or accounts needed.
 
+![cosign verify output showing the Chainguard issuer and identity](docs/img/05-verify.png)
+
 ### Step 4. Software bill of materials
 
 ```bash
@@ -101,6 +109,8 @@ count, then fetches the SBOM Chainguard already published and signed for the
 base image. Fewer packages means a shorter list to check when the next big
 CVE lands.
 
+![syft SBOM package counts: 109 vs 47](docs/img/06-sbom.png)
+
 ### Step 5. A one-page report
 
 ```bash
@@ -108,6 +118,8 @@ make report        # writes out/report.html and opens it (macOS)
 ```
 
 On Linux, open `out/report.html` in a browser yourself.
+
+![HTML report comparing both images](docs/img/09-report.png)
 
 ### Step 6. Run both and look inside
 
@@ -119,6 +131,10 @@ Open http://localhost:8081 (upstream) and http://localhost:8082 (Chainguard).
 The page reports what the app is running on: OS name, user id, whether a shell
 exists, how many OS packages are installed.
 
+![upstream app page: Debian, uid 0, shell present, 87 packages](docs/img/07-app-upstream.png)
+
+![chainguard app page: Wolfi, uid 65532, no shell, 26 packages](docs/img/08-app-chainguard.png)
+
 Now try to get a shell in each:
 
 ```bash
@@ -128,6 +144,8 @@ docker exec -it demo-chainguard sh      # fails: there is no shell to run
 
 That second failure is the security feature. Someone who gets code execution
 inside the Chainguard container has no shell, no package manager and no root.
+
+![upstream: root shell with apt-get and 259 binaries; chainguard: no shell at all](docs/img/03-shell.png)
 
 ```bash
 make stop
@@ -298,6 +316,7 @@ scripts/             one script per step; the Makefile just calls them
 k8s/                 namespace, two deployments with services, Kyverno policies, signed test pod
 .claude/skills/      the chainguard-migrate agent skill and its base-image map
 .github/workflows/   reference supply-chain pipeline
+docs/img/            the screenshots used in this README
 out/                 scan results, SBOMs and the HTML report (created by the scripts, not committed)
 ```
 

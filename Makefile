@@ -1,4 +1,4 @@
-.PHONY: tools build scan sbom verify report run stop aks-up acr-push deploy policy aks-down clean demo
+.PHONY: extend tools build scan sbom verify report run stop aks-up acr-push deploy policy aks-down clean demo
 tools:     ; ./scripts/install-tools.sh
 build:     ; ./scripts/build.sh
 scan:      ; ./scripts/scan.sh
@@ -16,4 +16,5 @@ deploy:    ; ./scripts/deploy.sh
 policy:    ; ./scripts/policy.sh
 aks-down:  ; ./scripts/aks-down.sh
 clean:     ; rm -rf out/*; -docker rmi demo-app:upstream demo-app:chainguard
+extend: ; @scripts/extend.sh
 demo: build scan verify sbom report   ## full local demo, no Azure needed

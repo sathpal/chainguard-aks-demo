@@ -294,6 +294,46 @@ A reference CI pipeline that does build, SBOM, scan gate, keyless signing and
 push to a registry is in [.github/workflows/supply-chain.yml](.github/workflows/supply-chain.yml).
 It is set to manual trigger and needs Azure OIDC secrets before it can run.
 
+## Part 4: the rest of what ships with a Chainguard image
+
+Everything above used the signature and the SBOM. An image on cgr.dev carries more,
+and none of it needs an account. One target runs it all:
+
+```bash
+make extend
+```
+
+What it shows, in order:
+
+1. **Everything attached to the image** (`cosign tree`): one signature, three attestations.
+2. **The three attestations, each verified against Chainguard's release identity:** the
+   SPDX SBOM, SLSA v1 provenance (who built it, with what build type), and the apko
+   configuration, which is the exact package list the image was assembled from.
+3. **Daily rebuilds:** the digest and build timestamp of today's `latest`. Run it again
+   tomorrow and both change. Only `latest` and `latest-dev` exist without an account;
+   version tags are a catalog feature.
+4. **The Wolfi security feed:** for the packages behind the remaining CVEs, the latest
+   fixed release and how many CVEs that package has had fixed. This is the data grype
+   uses to say "fixed" or "not yet".
+5. **dfc, Chainguard's Dockerfile converter,** run on the upstream Dockerfile. It swaps
+   the base for a catalog image in one step. Compare its single-stage output with the
+   multi-stage file in `docker/`.
+6. **apko, the tool Chainguard builds its own images with.** [apko/python-custom.yaml](apko/python-custom.yaml)
+   assembles a Python image from Wolfi packages plus one extra package, in about ten
+   seconds, with an SBOM written next to it and no Dockerfile. This is what "custom
+   assembly" means in the paid catalog, done by hand.
+
+Steps 5 and 6 need two more tools. Homebrew has them (`brew install chainguard-dev/tap/dfc apko`),
+or download the release binaries from
+[chainguard-dev/dfc](https://github.com/chainguard-dev/dfc/releases) and
+[chainguard-dev/apko](https://github.com/chainguard-dev/apko/releases). Docker must be running
+for step 6.
+
+`chainctl`, the account CLI (image diff, image history, pull tokens, identity
+federation for private registries), needs a free Chainguard account and a browser login,
+so it is not in the script. Install it with `brew install chainguard-dev/tap/chainctl`
+and run `chainctl auth login`.
+
 ## Troubleshooting
 
 **`az aks create` says the VM size is not allowed or quota is insufficient.**
@@ -321,6 +361,9 @@ Either write `USER 65532` in the Dockerfile or set `runAsUser: 65532` in the
 pod spec. This repo does both, so the image is correct on its own and the
 manifest still guards against a future image that is not.
 
+**`brew install` says "Your Command Line Tools are too outdated".**
+Run `xcode-select --install`, or skip Homebrew and download the release binary for the tool.
+
 **Docker fails with "input/output error" or "no space left".** Your disk is
 full. Free space, restart Docker Desktop, then `docker builder prune -af`.
 
@@ -334,6 +377,7 @@ Part 2, Step 4.
 app/                 the FastAPI app; / shows a page, /api returns JSON, /healthz for probes
 docker/              Dockerfile.upstream and Dockerfile.chainguard
 scripts/             one script per step; the Makefile just calls them
+apko/                a declarative image definition for the apko step in Part 4
 k8s/                 namespace, two deployments with services, Kyverno policies, signed test pod
 .claude/skills/      the chainguard-migrate agent skill and its base-image map
 .github/workflows/   reference supply-chain pipeline

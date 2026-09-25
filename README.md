@@ -294,6 +294,11 @@ A reference CI pipeline that does build, SBOM, scan gate, keyless signing and
 push to a registry is in [.github/workflows/supply-chain.yml](.github/workflows/supply-chain.yml).
 It is set to manual trigger and needs Azure OIDC secrets before it can run.
 
+## Prefer typing every command yourself?
+
+[docs/hands-on-lab.md](docs/hands-on-lab.md) is this whole demo without the Makefile:
+each step as raw commands, the output you should see, and the one-line explanation.
+
 ## Part 4: the rest of what ships with a Chainguard image
 
 Everything above used the signature and the SBOM. An image on cgr.dev carries more,

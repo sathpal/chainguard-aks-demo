@@ -36,7 +36,7 @@ open https://github.com/chainguard-dev/dfc/releases   https://github.com/chaingu
 Check:
 
 ```bash
-grype version | head -1; syft version | head -1; cosign version 2>&1 | grep -i gitversion; crane version; dfc version | head -1; apko version | grep GitVersion; chainctl version | grep GitVersion
+grype version | head -1; syft version | head -1; cosign version 2>&1 | grep -i gitversion; crane version; dfc --version | head -1; apko version | grep GitVersion; chainctl version | grep GitVersion
 ```
 
 ---
